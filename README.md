@@ -82,7 +82,7 @@ The demo promotes the event this was built at: **[Product Unconference 2026](htt
 6. **The catch.** Ansh sends a video **without the ID card**. Lily notices, says what she liked, and asks for one fix.
 7. **Done.** The second video shows the card. We approve it, and the payment is ready to approve.
 
-🎥 **[Watch the full run (2:47)](demo/lily-demo-2m47s.mp4)**, recorded live: one chat message → campaign → negotiation with a real creator → video sent back for the missing ID card → approved → payment waiting. Waits are sped up.
+🎥 **[Watch the demo (1:33)](demo/lily-demo.mp4)**: the app on the left and the creator's real Instagram on the right, in sync. One chat message → campaign → negotiation with a real creator → video sent back for the missing ID card → approved → payment waiting. Waits are sped up. The uncut screen run is [here (2:47)](demo/lily-demo-2m47s.mp4).
 
 ## Where it stands
 
