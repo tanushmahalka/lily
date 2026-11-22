@@ -1,0 +1,3 @@
+Orchestrator answers. Read CONTRACT.md "Amendments v2" first; it is now binding.
+1 Approved: ideas run through the chat stream (#2). 2 `gateway run` in the background with a pid file, logging to data/hermes.log; no launchd. 3 approvals off for profile creat0r only; also limit each webhook route's toolsets to what the skills need. Unknown senders never wake Lily (#11), and the allowlist bounds who can reach her. 4 postChat accepts role 'admin' (#1). 5 #3: matches your assumption. 6 yes, lily.unreachable (#12). 7 yes, eventsource-parser is installed. 8 memory on. 9 yes.
+Update plans/E-lily.md, then keep waiting: build only after "approved".

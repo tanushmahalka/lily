@@ -1,0 +1,20 @@
+{
+  "name": "creat0r-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=../.env --watch src/index.ts",
+    "seed": "bun --env-file=../.env src/seed.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^3.6.1",
+    "agentmail": "^0.5.54",
+    "eventsource-parser": "^4.1.3",
+    "hono": "^4.13.20"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.5",
+    "typescript": "^7.0.2"
+  }
+}

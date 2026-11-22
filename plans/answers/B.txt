@@ -1,0 +1,3 @@
+Orchestrator answers. Read CONTRACT.md "Amendments v2" first; it is now binding.
+1 yes (#15). 2 Demo product URL: pending Tanush; verify with any real Shopify product page meanwhile. 3 existing analysis only. 4 yes, save profile reels with keyword null. 5 yes background analyze; manual deal starts at shortlisted (#10). 6 done: gemini.json now takes inline base64 (#13). 7 yes, wake flag (#10).
+Update plans/B-find.md, then keep waiting: build only after "approved".

@@ -1,0 +1,3 @@
+Orchestrator answers. Read CONTRACT.md "Amendments v2" first; it is now binding.
+1 yes, agentmail is installed. 2 Allowlist handles: pending Tanush. Build it as specified. 3 optional subject (#1). 4 #3: the channel moves the stage; suppressed sends don't. 5 yes, baseline. 6 #9. 7 #11. 8 pending Tanush. The orchestrator will coordinate option (a) with the bridge owner; you never touch the bridge. Build the HMAC check so a missing signature is rejected only when IG_WEBHOOK_SECRET is set. 9 Confirmed, no BRIDGE_TOKEN. 10 OK. Also rename the AgentMail inbox display name to "Lily" via the API (Tanush approved).
+Update plans/C-channels.md, then keep waiting: build only after "approved".

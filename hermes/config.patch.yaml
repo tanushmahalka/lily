@@ -1,0 +1,45 @@
+# Merged into ~/.hermes/profiles/creat0r/config.yaml by install.sh (merge_config.py).
+# "__CREAT0R_DIR__" is replaced with the absolute creat0r path at install time.
+model:
+  provider: anthropic
+  default: claude-opus-5-5
+
+agent:
+  reasoning_effort: medium
+
+terminal:
+  backend: local
+  cwd: "__CREAT0R_DIR__"
+
+# Profile creat0r only: nobody is around to answer a terminal approval prompt.
+approvals:
+  mode: "off"
+
+# Admin chat (API server) gets the same small surface as the webhooks, plus memory.
+platform_toolsets:
+  api_server: [terminal, memory]
+
+platforms:
+  webhook:
+    extra:
+      host: 127.0.0.1
+      routes:
+        campaign-start:
+          prompt: "Campaign {campaign_id} moved to phase '{phase}'. Run the creat0r-find skill for it now."
+          skills: [creat0r-context, creat0r-find, creat0r-outreach]
+          toolsets: [terminal]
+          deliver: log
+        creator-message:
+          prompt: "New creator message on deal {deal_id} (message {message_id}). Read the deal context and handle it."
+          coalesce:
+            key: deal_id
+            window_seconds: 20
+            max_wait_seconds: 90
+          skills: [creat0r-context, creat0r-negotiate, creat0r-review]
+          toolsets: [terminal]
+          deliver: log
+        admin-decision:
+          prompt: "The admin side changed something. Payload: {__raw__}. Use creat0r-admin to act on it."
+          skills: [creat0r-context, creat0r-admin, creat0r-outreach, creat0r-negotiate, creat0r-review]
+          toolsets: [terminal]
+          deliver: log

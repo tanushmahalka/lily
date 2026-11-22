@@ -1,0 +1,5 @@
+Orchestrator answers. Read CONTRACT.md "Amendments v2" first; it is now binding.
+1 Deal gate in human_first: still pending Tanush. Implement it as one gate map constant; default ON.
+2 #1. 3 #3 (no-op plus latest_action). 4 #3; payment decisions don't wake Lily. 5 #4 (400 coming_soon). 6 yes (#3). 7 yes 422 (#4). 8 yes (#2). 9 yes (#7). 10 yes (#6). 11 yes (#6). 12 inline, no zod. 13 yes, keep both in sync (#5). 14 leave unset.
+Also yours from the amendments: postChat accepts role 'admin' (E stores admin turns through it), the SSE format (#8), enriched approvals and creators.deals (#6), campaign title + payouts in detail (#6), perf lily_line (#6): generate it from the snapshots, e.g. "Still growing: 14.9k views 30 hours after posting".
+Update plans/A-core.md with these, then keep waiting: build only after "approved".
