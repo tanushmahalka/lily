@@ -377,7 +377,7 @@ app.get("/creators", (c) => {
 });
 
 // `cr_` prefix keeps find's GET /creators/past reachable (core is mounted first).
-app.get("/creators/:id{cr_[a-z0-9]+}", (c) => {
+app.get("/creators/:id{crt?_[a-z0-9]+}", (c) => {
   const creator = mustRow("creators", c.req.param("id"), "creator");
   const deals = all("SELECT * FROM deals WHERE creator_id = ? ORDER BY created_at DESC", creator.id).map((deal) => ({
     deal, campaign: withTitle(row("campaigns", deal.campaign_id)), analysis: latestAnalysis(creator.id, deal.campaign_id),

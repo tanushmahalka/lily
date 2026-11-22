@@ -55,10 +55,10 @@ flowchart LR
 
 | Job | AI | Example |
 |---|---|---|
-| Talking, negotiating, deciding the next step | **Claude Opus 5.5**, running as an agent on [Hermes](https://github.com/NousResearch/hermes-agent) with one skill per campaign step | Counters $350 with $220 and a faster delivery date |
+| Talking, negotiating, deciding the next step | **Claude Opus 5.5**, running as an agent on [Hermes](https://github.com/NousResearch/hermes-agent) with one skill per campaign step | Ansh asked for $450 against a $360 limit; Lily countered at $340 and he took it |
 | Understanding the product | **Gemini** reads the product page | "Brand: The Product Folks. Product: Product Unconference 2026" |
 | Judging a creator | **Gemini** looks at their last 10 reels | "Shows products up close, posts 4× a week, face on camera" |
-| Reviewing a video | **Gemini** watches it and checks each rule with a timestamp | "ID card not visible anywhere. Bottle in shot from 0:01" |
+| Reviewing a video | **Gemini** watches it and checks each rule with a timestamp | "No ID card shown" in round 1; "ID pass held up clearly at 0:11" in round 2 |
 
 Lily never writes ideas, offers or approvals as free text for the app to guess at. She saves them through the API, and the app shows them as cards with buttons. The AI handles judgement and tone; code handles prices, limits and stages.
 
@@ -78,15 +78,17 @@ The demo promotes the event this was built at: **[Product Unconference 2026](htt
 2. **Ideas.** Lily reads the page and proposes 3 ideas. Each one carries the ID-card rule word for word.
 3. **Creators.** The campaign fills up with creators and the reason she picked each.
 4. **Outreach.** We add Ansh by hand. Lily DMs him on Instagram within seconds.
-5. **Negotiation.** Ansh asks for more than the limit. Lily counters, and when he holds firm she asks us. We approve.
+5. **Negotiation.** Ansh asks for $450, above Lily's $360 limit. She counters at $340, he accepts, and the deal waits for our OK. We approve.
 6. **The catch.** Ansh sends a video **without the ID card**. Lily notices, says what she liked, and asks for one fix.
 7. **Done.** The second video shows the card. We approve it, and the payment is ready to approve.
+
+🎥 **[Watch the full run (2:47)](demo/lily-demo-2m47s.mp4)**, recorded live: one chat message → campaign → negotiation with a real creator → video sent back for the missing ID card → approved → payment waiting. Waits are sped up.
 
 ## Where it stands
 
 | | |
 |---|---|
-| 🟡 Finishing now | Instagram DMs, email, creator search and analysis, negotiation with limits, video review, approvals, chat with Lily |
+| ✅ Live | Instagram DMs, email, creator search and analysis, negotiation with limits, video review, approvals, chat with Lily |
 | 🖼️ Screens with sample data | Post-launch performance (checked every 6 hours), payouts |
 | 🔜 Next | Full autopilot, Meta's official messaging API instead of a personal account, real payouts |
 

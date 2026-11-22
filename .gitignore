@@ -5,3 +5,4 @@ node_modules/
 *.pid
 dist/
 .DS_Store
+demo/raw-screen-recording.webm

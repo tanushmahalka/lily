@@ -21,10 +21,10 @@ export default function AppShell() {
     <div style={{ display: "flex", height: "100vh" }}>
       <aside style={{ width: 220, flexShrink: 0, borderRight: "1px solid #ececec", background: "#fff", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px 18px" }}>
-          <Avatar name={brand?.name || "creat0r"} src={brand?.logo_url} size={28} />
+          <Avatar name={brand?.name || "Lily"} src={brand?.logo_url || "/lily.png"} size={28} />
           <div style={{ minWidth: 0 }}>
-            <Text weight="semibold" truncate>{brand?.name || "creat0r"}</Text>
-            <Text size="xs" muted as="div">with Lily</Text>
+            <Text weight="semibold" truncate>{brand?.name || "Lily"}</Text>
+            {brand?.name ? <Text size="xs" muted as="div">with Lily</Text> : null}
           </div>
         </div>
         {NAV.map((n) => {
