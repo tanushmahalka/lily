@@ -1,5 +1,9 @@
 <p align="center"><img src="assets/banner.png" alt="lily: agentic influencer management at scale" /></p>
 
+<p align="center"><a href="demo/lily-demo.mp4"><img src="assets/demo-poster.jpg" alt="Watch the Lily demo (1:33)" width="100%" /></a></p>
+
+<p align="center"><sub>The app on the left, the creator's real Instagram on the right, in sync. One chat message → campaign → negotiation → video sent back for the missing ID card → approved → payment waiting.</sub></p>
+
 <p align="center"><b>Lily runs your creator campaigns for you.</b><br/>
 Give her a budget, a product link and a goal. She finds creators, messages them, agrees on a price,<br/>
 reviews their videos and asks you only when a decision is really yours.</p>
@@ -82,7 +86,7 @@ The demo promotes the event this was built at: **[Product Unconference 2026](htt
 6. **The catch.** Ansh sends a video **without the ID card**. Lily notices, says what she liked, and asks for one fix.
 7. **Done.** The second video shows the card. We approve it, and the payment is ready to approve.
 
-🎥 **[Watch the demo (1:33)](demo/lily-demo.mp4)**: the app on the left and the creator's real Instagram on the right, in sync. One chat message → campaign → negotiation with a real creator → video sent back for the missing ID card → approved → payment waiting. Waits are sped up. The uncut screen run is [here (2:47)](demo/lily-demo-2m47s.mp4).
+The uncut screen run is [here (2:47)](demo/lily-demo-2m47s.mp4).
 
 ## Where it stands
 
