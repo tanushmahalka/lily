@@ -63,6 +63,7 @@ export function friendlyStep(tool: string, label = ""): string {
   if (s.includes("/creators/past")) return "Checking creators you've worked with";
   if (s.includes("/creators/analyze")) return field("handle") ? `Looking at @${field("handle")!.replace(/^@/, "")}` : "Looking at a creator";
   if (/\/campaigns\/[^/\s]+\/ideas/.test(s)) return "Drafting 3 ideas";
+  if (/-X POST\s+\S*\/api\/campaigns(?![\w/])/.test(s)) return "Setting up your campaign";
   if (s.includes("/shortlist/submit")) return "Putting the shortlist together";
   if (/\/deals\/[^/\s]+\/send/.test(s)) return "Sending a message";
   if (/\/deals\/[^/\s]+\/offers/.test(s)) return "Working on the offer";

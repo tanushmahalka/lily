@@ -17,14 +17,16 @@ Webhook `campaign-start` with `phase: find`.
 Run **one curl per command**, with the full URL written out (no shell variables, no `&&` chains): the app turns each command into a progress line for the admin.
 
 1. `curl -s http://127.0.0.1:4400/api/campaigns/<campaign_id>` → the chosen idea is in `ideas` (`chosen: 1`) and `campaign.brief`; note `creators_target`, `keywords`, `campaign.autonomy`. If `deals` already has creators, don't add them twice.
+   `curl -s http://127.0.0.1:4400/api/settings` → `brand.country` and `brand.language`: the market to search in.
 2. **Past creators first:** `curl -s "http://127.0.0.1:4400/api/creators/past?campaign_id=<campaign_id>"`. Anyone with fit `great` or `good` goes on the shortlist (step 5).
 3. **Search:** for each keyword of the chosen idea (max 3):
-   `curl -s -X POST http://127.0.0.1:4400/api/find/reels -H 'Content-Type: application/json' -d '{"campaign_id":"<id>","keyword":"<kw>","limit":10}'`
+   `curl -s -X POST http://127.0.0.1:4400/api/find/reels -H 'Content-Type: application/json' -d '{"campaign_id":"<id>","keyword":"<kw>","limit":10,"country":"<brand.country>","language":"<brand.language>"}'`
+   (leave out `country`/`language` when they're empty; if a keyword isn't tied to the market yet, add it, e.g. "product manager Bengaluru")
    → reels and the creators behind them. Pick the most promising creators (good views, active, on-topic), about 2× `creators_target`, max 8.
 4. **Analyze each pick:**
    `curl -s -X POST http://127.0.0.1:4400/api/creators/analyze -H 'Content-Type: application/json' -d '{"handle":"<ig_handle>","campaign_id":"<id>"}'`
    → `{fit: great|good|weak|excluded, reasons, …}`.
-5. **Shortlist** every `great`, then `good`, until you reach `creators_target`. Skip `weak` and `excluded`:
+5. **Shortlist** every `great`, then `good`, until you reach `creators_target`. Skip `weak` and `excluded` (a creator outside the brand's market comes back `weak`):
    `curl -s -X POST http://127.0.0.1:4400/api/deals -H 'Content-Type: application/json' -d '{"campaign_id":"<id>","creator_id":"<creator_id>","channel":"instagram"}'`
    Use `"channel":"email"` only when the creator has an email and no Instagram DM is possible.
 6. **Submit:** `curl -s -X POST http://127.0.0.1:4400/api/campaigns/<id>/shortlist/submit`

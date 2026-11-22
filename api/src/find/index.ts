@@ -3,7 +3,8 @@ import { Hono } from "hono";
 import { db, id, now, parseRow, parseRows } from "../lib/db";
 import { logEvent } from "../lib/events";
 import { wakeLily } from "../lily";
-import { AnalysisError, analyzeCreator, cleanHandle, saveReel, upsertCreator } from "./analyze";
+import { AnalysisError, analyzeCreator, brandMarket, cleanHandle, saveReel, upsertCreator } from "./analyze";
+import { json, Type } from "../lib/gemini";
 import { readProduct } from "./product";
 import { normReel, reelList, tregCall, type Reel } from "./treg";
 
@@ -19,16 +20,47 @@ app.post("/product/read", async (c) => {
   try { return c.json(await readProduct(url, campaign_id ?? null)); } catch (e) { return fail(c, e); }
 });
 
+/** One cheap text-only Gemini call (~$0.001): does each reel reach the target market? Never filters, only ranks. */
+async function marketRanks(reels: Reel[], market: { country: string | null; language: string | null }) {
+  if (!market.country && !market.language) return reels.map(() => 1);
+  const order = { match: 0, unclear: 1, mismatch: 2 } as const;
+  try {
+    const res = await json<{ items: { i: number; market: keyof typeof order }[] }>({
+      schema: {
+        type: Type.OBJECT,
+        properties: { items: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
+          i: { type: Type.INTEGER }, market: { type: Type.STRING, enum: ["match", "unclear", "mismatch"] },
+        }, required: ["i", "market"] } } },
+        required: ["items"],
+      } as any,
+      prompt: `Target market: country ${market.country ?? "any"}, language ${market.language ?? "any"}.
+For each Instagram reel below, judge from the creator handle, name and caption whether the creator likely reaches that market: "match", "mismatch" (clearly based in another country) or "unclear". Another language that is common in the target country (e.g. Hindi or Hinglish for India) is not a mismatch.
+${reels.map((r, i) => `${i}. @${r.username} ${r.display_name ?? ""}: ${(r.caption ?? "(no caption)").slice(0, 200).replace(/\s+/g, " ")}`).join("\n")}`,
+    });
+    const byIdx = new Map(res.items.map((x) => [x.i, order[x.market] ?? 1]));
+    return reels.map((_, i) => byIdx.get(i) ?? 1);
+  } catch (e) {
+    console.error("[find] market ranking skipped", (e as Error).message);
+    return reels.map(() => 1);
+  }
+}
+
 app.post("/find/reels", async (c) => {
-  const { campaign_id, keyword, limit = 20 } = await body(c);
+  const { campaign_id, keyword, limit = 20, country, language } = await body(c);
   if (!campaign_id || !keyword) return c.json({ error: "campaign_id and keyword are required" }, 400);
   if (!db.query("SELECT 1 FROM campaigns WHERE id = ?").get(campaign_id)) return c.json({ error: "campaign not found" }, 404);
   let reels: Reel[];
   try {
     reels = reelList(await tregCall("treg.instagram.search.reels", { q: keyword }))
-      .map(normReel).filter((r): r is Reel => !!r?.username)
-      .sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, Number(limit) || 20);
+      .map(normReel).filter((r): r is Reel => !!r?.username);
   } catch (e) { return fail(c, e); }
+  const brand = brandMarket();
+  const market = { country: country || brand.country, language: language || brand.language };
+  const ranks = await marketRanks(reels, market);
+  const rankOf = new Map(reels.map((r, i) => [r.shortcode, ranks[i]]));
+  reels = reels.map((r, i) => ({ r, k: ranks[i] }))
+    .sort((a, b) => a.k - b.k || (b.r.views ?? 0) - (a.r.views ?? 0))
+    .map((x) => x.r).slice(0, Number(limit) || 20);
 
   const creators = new Map<string, any>();
   for (const r of reels) {
@@ -43,8 +75,10 @@ app.post("/find/reels", async (c) => {
     data: { keyword, reels: reels.length, creators: creators.size },
   });
   const rows = reels.length
-    ? parseRows(db.query(`SELECT * FROM found_reels WHERE campaign_id = ? AND shortcode IN (${reels.map(() => "?").join(",")}) ORDER BY views DESC`)
+    ? parseRows(db.query(`SELECT * FROM found_reels WHERE campaign_id = ? AND shortcode IN (${reels.map(() => "?").join(",")})`)
       .all(campaign_id, ...reels.map((r) => r.shortcode)))
+      .map((row: any) => ({ ...row, market: ["match", "unclear", "mismatch"][rankOf.get(row.shortcode) ?? 1] }))
+      .sort((a: any, b: any) => (rankOf.get(a.shortcode) ?? 1) - (rankOf.get(b.shortcode) ?? 1) || (b.views ?? 0) - (a.views ?? 0))
     : [];
   return c.json({ reels: rows, creators: [...creators.values()] });
 });

@@ -86,7 +86,10 @@ function systemMessage(thread: { id: string; title: string; campaign_id: string 
   } else {
     lines.push(`This is the General thread (no campaign). Use GET /api/campaigns to find the campaign the admin means.`);
   }
-  const skills = ideating ? ["creat0r-context", "creat0r-ideas"] : ["creat0r-context", "creat0r-admin", "creat0r-outreach", "creat0r-negotiate"];
+  // creat0r-ideas is always included: the admin can start a new campaign from any thread (Amendment v5 #3).
+  const skills = ideating
+    ? ["creat0r-context", "creat0r-ideas"]
+    : ["creat0r-context", "creat0r-admin", "creat0r-ideas", "creat0r-outreach", "creat0r-negotiate"];
   lines.push("", ...skills.map((s) => `# Skill: ${s}\n${skill(s)}`));
   return lines.join("\n");
 }

@@ -29,6 +29,12 @@ Run **one curl per command**, with the full URL written out (no shell variables,
 ## Admin chat
 Plain words, 1–3 short sentences. No ids, APIs, stage codes or tool talk. The chat context gives you the `campaign_id` (none in the General thread: then `curl -s http://127.0.0.1:4400/api/campaigns` to find the campaign the admin means).
 
+- **"I want a new campaign for <link> with $<n> budget, goal …"** (works in any thread, including General):
+  1. You need three things: the product link, the budget in USD and the goal. Ask only for what's missing, in one short question, and stop until the admin answers. If they gave no goal, offer the usual ones in the same line ("UGC videos for ads, a launch, or sales?").
+  2. Create it in this thread (`thread_id` from the chat context; `autonomy` only if the admin asked for one, `human_first` or `autopilot`):
+     `curl -s -X POST http://127.0.0.1:4400/api/campaigns -H 'Content-Type: application/json' -d '{"budget_usd":1500,"product_url":"<link>","goal":"<goal in the admin's words>","thread_id":"<thread_id>"}'`
+     → `{campaign, thread_id}`. Keep the goal in the admin's words: checklist items in it must survive word for word.
+  3. In the same turn, run creat0r-ideas for the new `campaign.id`. The idea cards appear in this thread.
 - **"How's it going?"**: `curl -s http://127.0.0.1:4400/api/campaigns/<id>` (and `curl -s "http://127.0.0.1:4400/api/events?campaign_id=<id>"` for recent activity). Answer in 1–3 sentences: who's talking, who's close to a deal, what needs them.
 - **"Add @x"**: `curl -s -X POST http://127.0.0.1:4400/api/creators -H 'Content-Type: application/json' -d '{"ig_handle":"x","campaign_id":"<id>","wake":false}'`, then do creat0r-outreach for the new deal in this same turn. Reply "Added @x and sent them a message."
 - **"Drop @x"**: find the deal in `GET http://127.0.0.1:4400/api/campaigns/<id>`, then `curl -s -X PATCH http://127.0.0.1:4400/api/deals/<deal_id> -H 'Content-Type: application/json' -d '{"stage":"declined","latest_action":"Removed by you"}'`. If you had already been talking to them, send a short kind note.

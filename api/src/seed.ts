@@ -1,12 +1,30 @@
-// Orchestrator owns this file. `bun run seed` wipes data/creat0r.db and fills demo data:
-// one active campaign with a creator in every stage, plus settings, accounts, chat, events.
+// Orchestrator owns this file.
+// `bun run seed`          wipes data/creat0r.db and fills demo data (one campaign, a creator in every stage).
+// `bun run seed -- --clean` empties every table in place (safe while the API runs) and keeps only
+//                          the outreach accounts, default autonomy and an empty brand: the clean demo start.
 import { rmSync } from "node:fs";
 import { join } from "node:path";
-const DATA_DIR = join(import.meta.dir, "../../data");
 
-for (const f of ["creat0r.db", "creat0r.db-wal", "creat0r.db-shm"]) rmSync(join(DATA_DIR, f), { force: true });
+const CLEAN = process.argv.includes("--clean");
+const DATA_DIR = join(import.meta.dir, "../../data");
+if (!CLEAN) for (const f of ["creat0r.db", "creat0r.db-wal", "creat0r.db-shm"]) rmSync(join(DATA_DIR, f), { force: true });
 const { db, id } = await import("./lib/db");
 db.exec("PRAGMA foreign_keys = OFF"); // seed inserts ideas before their campaign
+
+if (CLEAN) {
+  const tables = db.query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").all() as { name: string }[];
+  db.transaction(() => {
+    for (const { name } of tables) db.exec(`DELETE FROM ${name}`);
+    const put = (sql: string, params: any) => db.query(sql).run(params);
+    put("INSERT INTO settings (key, value_json) VALUES ($k, $v)", { k: "brand", v: JSON.stringify({ name: "", logo_url: "", about: "", tone: "", website: "", country: "", language: "" }) });
+    put("INSERT INTO settings (key, value_json) VALUES ($k, $v)", { k: "default_autonomy", v: JSON.stringify("human_first") });
+    put("INSERT INTO accounts (id, channel, handle, speaks_as, live) VALUES ($i, 'instagram', 'ta__nush', 'Tanush', 1)", { i: id("acc") });
+    put("INSERT INTO accounts (id, channel, handle, speaks_as, live) VALUES ($i, 'email', 'lily@email.makelocalads.com', 'Lily, partnerships at {brand}', 1)", { i: id("acc") });
+  })();
+  db.exec("PRAGMA foreign_keys = ON");
+  console.log(`clean: emptied ${tables.length} tables, kept accounts + default autonomy`);
+  process.exit(0);
+}
 
 const H = 3600_000;
 const t0 = Date.now() - 30 * H;

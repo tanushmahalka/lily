@@ -4,7 +4,7 @@ import { json, Type } from "../lib/gemini";
 import { setCampaignProduct } from "../core";
 import { tregCall } from "./treg";
 
-export type Brand = { name: string; logo_url: string | null; about: string; tone: string; website: string };
+export type Brand = { name: string; logo_url: string | null; about: string; tone: string; website: string; country: string | null; language: string | null };
 export type Product = { title: string; description: string; price: string | null; images: string[]; category: string };
 
 const schema = {
@@ -17,8 +17,10 @@ const schema = {
         logo_url: { type: Type.STRING, nullable: true },
         about: { type: Type.STRING },
         tone: { type: Type.STRING },
+        country: { type: Type.STRING, nullable: true },
+        language: { type: Type.STRING, nullable: true },
       },
-      required: ["name", "logo_url", "about", "tone"],
+      required: ["name", "logo_url", "about", "tone", "country", "language"],
     },
     product: {
       type: Type.OBJECT,
@@ -51,6 +53,8 @@ export async function readProduct(url: string, campaignId?: string | null) {
 The product may be a physical item, software, a service, or an event (then the product is the ticket or registration).
 Return the brand (the company behind it) and the product.
 - brand.about: 1-2 sentences. brand.tone: a few words describing how the brand talks.
+- brand.country: the main country the brand sells to or the event happens in (e.g. "India"), from places, currency or phone codes; null if unclear.
+- brand.language: the main language of its audience (e.g. "English", "Hindi"); usually the page's language.
 - product.description: 2-3 sentences, including key facts like dates and place for an event.
 - product.price: only if the page states it clearly for this product, else null. Never invent one.
 - product.category: one or two words (e.g. "skincare", "saas", "event").

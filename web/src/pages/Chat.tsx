@@ -42,11 +42,11 @@ export default function Chat() {
   const abortRef = useRef<AbortController | null>(null);
   const thread = threads?.find((t) => t.id === threadId);
 
-  // /chat → newest campaign thread (or General)
+  // /chat → General, the main place to talk to Lily (CONTRACT v5 #3)
   useEffect(() => {
     if (!threadId && threads?.length) {
-      const first = [...threads].sort((a, b) => (b.last_at ?? b.created_at) - (a.last_at ?? a.created_at))[0];
-      nav(`/chat/${first.id}`, { replace: true });
+      const general = threads.find((t) => !t.campaign_id) ?? threads[0];
+      nav(`/chat/${general.id}`, { replace: true });
     }
   }, [threadId, threads, nav]);
 
@@ -101,6 +101,7 @@ export default function Chat() {
       <ChatHistory
         threads={(threads ?? []).map((t: ChatThread) => ({
           id: t.id, title: t.title, preview: t.preview, time: new Date(t.last_at ?? t.updated_at ?? t.created_at),
+          pinned: !t.campaign_id && t.title === "General",
         }))}
         activeId={threadId}
         onSelect={(id: string) => nav(`/chat/${id}`)}
@@ -143,7 +144,7 @@ export default function Chat() {
               </div>
             </div>
             <div style={{ maxWidth: 780, width: "100%", margin: "0 auto", padding: "8px 32px 24px", boxSizing: "border-box" }}>
-              <Composer placeholder="Message Lily…" onSend={send} streaming={!!live} onStop={() => abortRef.current?.abort()} />
+              <Composer placeholder={thread?.campaign_id ? "Message Lily…" : "Ask Lily anything, or start a campaign: link, budget, goal…"} onSend={send} streaming={!!live} onStop={() => abortRef.current?.abort()} />
             </div>
           </>
         ) : (

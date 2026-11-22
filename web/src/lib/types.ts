@@ -5,7 +5,7 @@ export type Stage =
 export type Autonomy = "human_first" | "autopilot" | "full_autopilot";
 export type Channel = "instagram" | "email";
 
-export interface Brand { name?: string; logo_url?: string; about?: string; tone?: string; website?: string }
+export interface Brand { name?: string; logo_url?: string; about?: string; tone?: string; website?: string; country?: string; language?: string }
 export interface Guardrails {
   fee_usd?: { min: number; max: number };
   revision_rounds?: { min: number; max: number };

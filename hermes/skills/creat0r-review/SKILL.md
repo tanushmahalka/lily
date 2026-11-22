@@ -23,10 +23,15 @@ Run **one curl per command**, with the full URL written out (no shell variables,
    → submission with `review = {verdict, checks:[{rule, passed, note}], feedback_to_creator, notes_for_admin}`.
 3. Compare `review.checks` with `brief.video_rules`. If `verdict` is `changes`, **any check failed, or a checklist item has no passing check**: send the feedback yourself, warm and specific: what you liked, then the one thing to fix. E.g. Instagram: "this is so good!! one thing, the Product Unconference ID card needs to be clearly visible, could you reshoot that bit?" Use `feedback_to_creator` as your source, but in your own voice and length.
    `curl -s -X POST http://127.0.0.1:4400/api/deals/<id>/send -H 'Content-Type: application/json' -d '{"channel":"<deal.channel>","text":"<feedback>"}'`
+   (see "Which channel to reply on" below when the video came by email)
 4. If `verdict` is `approve` and every checklist item passed: approve it for the admin, then thank the creator:
    `curl -s -X POST http://127.0.0.1:4400/api/submissions/<submission_id>/lily-approve`
-   Reply: "love it, thank you! just running it by the team, will confirm shortly".
+   Reply on `deal.channel`: "love it, thank you! just running it by the team, will confirm shortly" (prefixed with "Got your video on email!" when it came by email on an Instagram deal).
 5. If the link can't be opened, ask the creator in one line for a link that's viewable without a login.
+
+## Which channel to reply on
+Always reply on the **deal's channel** (`deal.channel`), not the channel the video arrived on.
+- Video arrived **by email** on an **Instagram** deal: send your reply on Instagram, as Tanush, and open it with "Got your video on email!", then the feedback or the thanks, e.g. "Got your video on email! this is so good, one thing, the Product Unconference ID card needs to be clearly visible, could you reshoot that bit?" No email reply needed.
 
 ## Pitfalls
 - Never `lily-approve` a video that failed any checklist item, even if the overall verdict says approve.

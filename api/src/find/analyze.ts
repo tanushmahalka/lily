@@ -73,6 +73,8 @@ type Judgment = {
   category: string; format: string; face_on_camera: boolean;
   content_fit: "strong" | "some" | "none"; can_deliver_checklist: boolean;
   brand_safe: boolean; safety_note: string; reasons: string[];
+  country: string | null; city: string | null; language: string | null;
+  market_match: "match" | "mismatch" | "unclear"; market_reason: string;
 };
 
 const judgmentSchema = {
@@ -86,8 +88,13 @@ const judgmentSchema = {
     brand_safe: { type: Type.BOOLEAN },
     safety_note: { type: Type.STRING },
     reasons: { type: Type.ARRAY, items: { type: Type.STRING } },
+    country: { type: Type.STRING, nullable: true },
+    city: { type: Type.STRING, nullable: true },
+    language: { type: Type.STRING, nullable: true },
+    market_match: { type: Type.STRING, enum: ["match", "mismatch", "unclear"] },
+    market_reason: { type: Type.STRING },
   },
-  required: ["category", "format", "face_on_camera", "content_fit", "can_deliver_checklist", "brand_safe", "safety_note", "reasons"],
+  required: ["category", "format", "face_on_camera", "content_fit", "can_deliver_checklist", "brand_safe", "safety_note", "reasons", "country", "city", "language", "market_match", "market_reason"],
 };
 
 const clamp = (x: number) => Math.max(0, Math.min(1, x));
@@ -125,6 +132,12 @@ function campaignContext(campaignId: string | null) {
     idea: idea && { title: idea.title, angle: idea.angle, video: idea.video_description, creator_profile: idea.creator_profile },
     checklist: (c.brief?.video_rules as string[] | undefined) ?? (idea?.video_rules as string[] | undefined) ?? [],
   };
+}
+
+export function brandMarket(): { country: string | null; language: string | null } {
+  const row = db.query("SELECT value_json FROM settings WHERE key = 'brand'").get() as { value_json: string } | null;
+  const b = row ? JSON.parse(row.value_json) : {};
+  return { country: b?.country || null, language: b?.language || null };
 }
 
 async function thumbs(reels: Reel[]) {
@@ -174,6 +187,7 @@ export async function analyzeCreator(handleIn: string, campaignId: string | null
 
 async function runAnalysis(handle: string, campaignId: string | null) {
   const ctx = campaignContext(campaignId);
+  const market = brandMarket();
   const known = db.query("SELECT ig_user_id FROM creators WHERE ig_handle = ?").get(handle) as { ig_user_id: string | null } | null;
 
   const [profOut, reelsOut] = await Promise.allSettled([
@@ -210,7 +224,12 @@ ${ctx.idea ? `Chosen idea: ${JSON.stringify(ctx.idea)}` : ""}
 Video checklist the creator's video must pass:
 ${ctx.checklist.length ? ctx.checklist.map((r) => `- ${r}`).join("\n") : "- (none yet)"}` : "No campaign yet: judge them as a creator for brand videos in general."}
 
+Brand's target market: country ${market.country ?? "(not set)"}, language ${market.language ?? "(not set)"}.
+
 Return:
+- country, city, language: where the creator is based and the language they mostly post in, guessed from bio, captions and on-screen text in the thumbnails; null if you can't tell.
+- market_match: "match" if they clearly reach the brand's target market, "mismatch" if they clearly don't (based in another country, or a language the audience doesn't speak; a language common in the target country, like Hindi or Hinglish for India, is fine), "unclear" otherwise or if the market isn't set.
+- market_reason: one short plain line about where and in what language they post, e.g. "Posts in English from Bengaluru" or "Posts in Spanish from Mexico".
 - category: their content niche in 1-3 words. format: their usual video format in a few words.
 - face_on_camera: do they appear and talk on camera.
 - content_fit: how well their content suits this campaign (strong / some / none).
@@ -219,9 +238,16 @@ Return:
 - reasons: 2-3 short reasons in plain words a marketing manager would say, e.g. "Talks to camera and has shared event recaps before". No scores, no jargon.`,
   });
 
-  const { fit, score } = decideFit(metrics, j);
+  const decided = decideFit(metrics, j);
+  const mismatch = j.market_match === "mismatch" && (market.country || market.language);
+  const fit = mismatch && decided.fit !== "excluded" ? ("weak" as const) : decided.fit;
+  const score = mismatch ? Math.min(decided.score, 44) : decided.score;
   const nr = numberReason(metrics);
-  const reasons = [...(j.reasons ?? []).slice(0, 3), ...(nr ? [nr] : [])].slice(0, 4);
+  const marketLine = j.market_reason?.trim()
+    ? (mismatch ? `Outside your market: ${j.market_reason.trim()}` : j.market_reason.trim())
+    : null;
+  const reasons = [...(marketLine && (mismatch || j.market_match === "match") ? [marketLine] : []),
+    ...(j.reasons ?? []).slice(0, 2), ...(nr ? [nr] : [])].slice(0, 4);
   if (fit === "excluded") reasons.unshift(`Not brand safe: ${j.safety_note}`);
 
   const creator = upsertCreator(handle, {
@@ -234,6 +260,7 @@ Return:
   const analysis = storeAnalysis(creator.id, campaignId, fit, score, reasons.slice(0, 4), {
     ...metrics, content_fit: j.content_fit, can_deliver_checklist: j.can_deliver_checklist,
     face_on_camera: j.face_on_camera, format: j.format, safety_note: j.safety_note,
+    country: j.country, city: j.city, language: j.language, market_match: j.market_match,
   });
   logEvent({
     campaign_id: campaignId, actor: "lily", type: "creator.analyzed",

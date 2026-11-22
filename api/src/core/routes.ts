@@ -34,6 +34,7 @@ app.put("/settings/:key", async (c) => {
     if (!AUTONOMY.includes(value)) throw fail(400, { error: "default_autonomy must be human_first or autopilot" });
   } else if (key === "brand") {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw fail(400, { error: "brand must be an object" });
+    for (const k of ["country", "language"]) if (value[k] != null && typeof value[k] !== "string") throw fail(400, { error: `brand.${k} must be a string` });
   } else throw fail(400, { error: `unknown setting ${key}` });
   db.query("INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json").run(key, JSON.stringify(value));
   logEvent({ actor: "admin", type: "settings.changed", summary: key === "brand" ? "Updated the brand details" : `Default mode is now ${AUTONOMY_LABEL[value]}`, data: { key } });
@@ -62,13 +63,19 @@ app.post("/campaigns", async (c) => {
   if (b.autonomy != null && !AUTONOMY.includes(b.autonomy)) throw fail(400, { error: "autonomy must be human_first or autopilot" });
   let autonomy: string = b.autonomy ?? getSetting<string>("default_autonomy") ?? "human_first";
   if (!AUTONOMY.includes(autonomy) || autonomy === "full_autopilot") autonomy = "human_first";
+  // Amendments v5 #3: a campaign started from chat keeps that thread instead of getting a new one.
+  if (b.thread_id != null) {
+    const existing = mustRow("chat_threads", b.thread_id, "thread");
+    if (existing.campaign_id) throw fail(409, { error: "thread already belongs to a campaign" });
+  }
   const cid = id("cmp");
-  const tid = id("thr");
+  const tid = b.thread_id ?? id("thr");
   const t = now();
   db.transaction(() => {
     db.query("INSERT INTO campaigns (id, status, autonomy, budget_usd, product_url, goal, chat_thread_id, created_at) VALUES (?, 'ideating', ?, ?, ?, ?, ?, ?)")
       .run(cid, autonomy, Math.round(b.budget_usd), b.product_url.trim(), b.goal.trim(), tid, t);
-    db.query("INSERT INTO chat_threads (id, title, campaign_id, created_at) VALUES (?, ?, ?, ?)").run(tid, b.goal.trim(), cid, t);
+    if (b.thread_id) db.query("UPDATE chat_threads SET campaign_id = ? WHERE id = ?").run(cid, tid);
+    else db.query("INSERT INTO chat_threads (id, title, campaign_id, created_at) VALUES (?, ?, ?, ?)").run(tid, b.goal.trim(), cid, t);
     logEvent({ campaign_id: cid, actor: "admin", type: "campaign.created", summary: `New campaign: ${b.goal.trim()}` });
   })();
   return c.json({ campaign: withTitle(row("campaigns", cid)), thread_id: tid });

@@ -106,3 +106,8 @@ None open for B. The two items above are waiting on the orchestrator.
 - treg reel providers may return no caption or date (crawl4ai for kush_2311); the post time is decoded from the Instagram media id.
 - A treg miss walks the provider waterfall for ~75 s and ~$0.003 (Max-Cost caps the whole waterfall at $0.01); `tregCall` kills at 60 s.
 - A failed analysis is stored as `fit:'excluded'` with the first reason "Analysis failed: …" (Amendments v4 #3), plus a `creator.analyzed` event.
+
+## Amendments v5 #2 (target market)
+- `/product/read` returns `brand.country` and `brand.language` (saved only when it fills the brand).
+- `analyzeCreator`: the same Gemini call guesses `metrics.country/city/language` and `market_match` against `settings.brand`. A clear mismatch caps the fit at `weak` (score ≤ 44) with the first reason "Outside your market: …"; a match puts a plain line first ("Posts in English and appears to be based in India"). No extra calls.
+- `/find/reels {country?, language?}` (defaults to the brand's) ranks match → unclear → mismatch, then views, using one text-only Gemini call over the captions (~$0.001). Never filters. Each returned reel has `market`.

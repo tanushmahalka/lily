@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Avatar, Badge, Button, Card, Heading, ListItem, SegmentedControl, Skeleton, StatusDot, Tabs, Text, TextArea, TextInput } from "../kit/halaska-kit";
+import { Avatar, Badge, Button, Card, Heading, ListItem, SegmentedControl, Select, Skeleton, StatusDot, Tabs, Text, TextArea, TextInput } from "../kit/halaska-kit";
 import { useSaveSetting } from "../lib/mutations";
 import { useAccounts, useSettings } from "../lib/queries";
 import { AUTONOMY_FROM_LABEL, AUTONOMY_LABEL, GATES } from "../lib/stages";
@@ -7,6 +7,10 @@ import { useToast } from "../lib/toast";
 import type { Autonomy, Brand } from "../lib/types";
 
 const TABS = ["Brand", "Accounts", "Lily"];
+const COUNTRIES = ["India", "United States", "United Kingdom", "Canada", "Australia", "Singapore", "United Arab Emirates", "Germany", "France", "Spain", "Brazil", "Mexico", "Indonesia", "Philippines", "Japan"];
+const LANGUAGES = ["English", "Hindi", "Hinglish", "Tamil", "Telugu", "Marathi", "Bengali", "Kannada", "Spanish", "Portuguese", "French", "German", "Arabic", "Indonesian", "Japanese"];
+/** Keep a value the page-reader guessed even if it isn't in the short list. */
+const withValue = (list: string[], v?: string) => (v && !list.includes(v) ? [v, ...list] : list);
 
 export default function Settings() {
   const [tab, setTab] = useState("Brand");
@@ -40,6 +44,11 @@ function BrandTab() {
         <TextInput label="Website" value={b.website ?? ""} onChange={set("website")} placeholder="https://…" />
         <TextArea label="About" value={b.about ?? ""} onChange={set("about")} rows={3} />
         <TextInput label="Tone" value={b.tone ?? ""} onChange={set("tone")} placeholder="Warm, simple, a little playful" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Select label="Target country" value={b.country ?? ""} onChange={set("country")} options={withValue(COUNTRIES, b.country)} placeholder="Pick a country" />
+          <Select label="Language" value={b.language ?? ""} onChange={set("language")} options={withValue(LANGUAGES, b.language)} placeholder="Pick a language" />
+        </div>
+        <Text size="xs" muted as="div">Lily looks for creators who post in this language, for people in this country.</Text>
         <div><Button type="submit">Save</Button></div>
       </form>
     </Card>

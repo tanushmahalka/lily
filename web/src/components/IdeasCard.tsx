@@ -49,10 +49,10 @@ export default function IdeasCard({ campaignId }: { campaignId: string }) {
           }))}
         />
         {chosenId ? (
-          <div><Button variant="secondary" onClick={() => nav(`/campaigns/${campaignId}`)}>Open campaign</Button></div>
+          <div><Button variant="secondary" onClick={() => nav(`/campaigns/${campaignId}`)}>Open campaign →</Button></div>
         ) : (
           <div>
-            <Button disabled={!pick} onClick={() => { if (!pick) return; choose.mutate(pick); nav(`/campaigns/${campaignId}`); }}>
+            <Button disabled={!pick} onClick={() => { if (pick) choose.mutate(pick); }}>
               Go with this
             </Button>
           </div>

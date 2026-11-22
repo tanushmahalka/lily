@@ -170,3 +170,20 @@ Each event carries a one-line human `summary`. The UI shows it verbatim, so writ
 6. `POST /campaigns` also accepts an optional `autonomy`, so F can set it in one call instead of patching afterwards.
 7. `POST /deals/:id/submissions` takes 20–30 s. Lily's tool calls to it must allow at least 90 s.
 8. **Thread rename is pushed live:** `setCampaignProduct` logs a `thread.renamed` event `{thread_id, title}`, and F refetches `/chat/threads` when it sees one.
+
+## Amendments v5 (Tanush's directions, binding)
+1. **Event dates:** Lily never questions the dates of the brand's own event. The brand wants videos that encourage people to come, and Lily writes ideas and briefs that way.
+2. **Target market in brand settings:** `settings.brand` gains `country` (e.g. "India") and `language` (e.g. "English", "Hindi"). F adds both fields to Settings → Brand. B's `/product/read` guesses them from the page when it fills the brand. Search uses them:
+   - Lily picks reel keywords in that language and market, e.g. "product manager Bengaluru".
+   - B's `analyzeCreator` guesses each creator's country and language from bio, captions and reels into `metrics.country` and `metrics.language`.
+   - B adds a plain reason ("Posts in English from Bengaluru") and lowers the fit to `weak` when the market clearly doesn't match.
+   - `/find/reels` accepts optional `country` and `language`; it can't filter at source, so B ranks by them after the analysis.
+3. **Campaigns can start from chat.** In any chat thread (e.g. General), the admin writes "I want a new campaign for <link> with $<n> budget, goal …". Lily, through the admin skill:
+   - asks only for what's missing
+   - calls `POST /campaigns {budget_usd, product_url, goal, autonomy?, thread_id}`
+   - runs the ideas flow in that same thread
+
+   With `thread_id`, A attaches the existing thread to the new campaign (it sets `campaign_id` and `chat_thread_id`, and renames it once the product is read) instead of creating a new thread. The idea cards and "Go with this" work in any thread. After choosing, F shows a "Open campaign →" link in the chat (no forced redirect).
+4. **Demo starts clean:** right before recording, the orchestrator wipes the database to just the accounts, default autonomy and an empty brand (`bun run seed -- --clean`).
+5. **Demo video setup (decided with Tanush):** the real Ansh replies live on Instagram while Tanush films Ansh's phone. Ansh's two clips arrive by **email from tanush@makelocalads.com** (the orchestrator sends them), which is set as Ansh's creator email. That makes an email from tanush@ match Ansh's creator, and so his active deal.
+   - When a video arrives by email for a deal whose channel is Instagram, Lily still gives her feedback **on Instagram** (Ansh's phone is what's filmed). One line there acknowledges it: "Got your video on email!". She may also send a one-line email reply.
