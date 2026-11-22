@@ -104,3 +104,11 @@ Cost: each Lily run is an Opus 5.5 turn with tool calls, roughly $0.05–0.40 pe
 
 ## 6. Questions
 None open.
+
+## 7. Build notes (what changed while building)
+- **Config merge in Bun** (`hermes/merge_config.ts`, `Bun.YAML`), not PyYAML: the Hermes Python has no yaml module.
+- **`gateway.standalone: true`** in the creat0r profile only. Hermes 0.22.5 refuses a per-profile gateway otherwise and wants the default profile's host gateway, which we never touch.
+- **`model.base_url: https://api.anthropic.com`**: a blank profile ships an OpenRouter base_url.
+- **One bundled skill per webhook route** (`creat0r-wake-<route>`, built by install.sh from hermes/skills): Hermes injects only the *first* skill a route lists. The chat route inlines its skills into the system message (it has no skills tool).
+- Skills tell Lily to run one curl per command with the full URL, because Hermes' step preview keeps only the first command of a chain.
+- `GET :8642/v1/skills` is broken in Hermes 0.22.5 (`find_all_skills() … include_editorial`); verify with `hermes -p creat0r skills list`.

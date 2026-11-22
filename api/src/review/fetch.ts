@@ -31,7 +31,7 @@ const curl = (url: string, dest: string) => run(["curl", "-fsSL", "--max-time", 
 
 /** Instagram post → its video URL via treg (≈$0.001). Never uses Tanush's account. */
 async function instagramVideoUrl(url: string): Promise<string> {
-  const out = await run(["treg", "call", "treg.instagram.post.detail", "--data", JSON.stringify({ url })], 90_000);
+  const out = await run(["treg", "call", "treg.instagram.post.detail", "--header", "X-Treg-Route-Max-Cost: 0.01", "--data", JSON.stringify({ url })], 90_000);
   let found: string | null = null;
   const walk = (v: any, key = ""): void => {
     if (found || v == null) return;

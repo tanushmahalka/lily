@@ -153,13 +153,11 @@ function storeAnalysis(creatorId: string, campaignId: string | null, fit: string
   return parseRow(db.query("SELECT * FROM analyses WHERE id = ?").get(aid));
 }
 
-/** Record a failed analysis so the admin sees why. Needs fit 'failed' in the schema (asked of the orchestrator). */
+/** Record a failed analysis so the admin sees why (Amendments v4 #3: fit 'excluded', first reason "Analysis failed: …"). */
 function recordFailure(handle: string, campaignId: string | null, err: AnalysisError) {
   const creator = upsertCreator(handle);
   logEvent({ campaign_id: campaignId, actor: "lily", type: "creator.analyzed", summary: `Couldn't analyze @${handle}: ${err.message}`, data: { creator_id: creator.id, error: err.kind } });
-  try {
-    storeAnalysis(creator.id, campaignId, "failed", 0, [`Analysis failed: ${err.message}`], { error: err.kind });
-  } catch { /* schema doesn't allow 'failed' yet: the event above is the record */ }
+  storeAnalysis(creator.id, campaignId, "excluded", 0, [`Analysis failed: ${err.message}`], { error: err.kind });
 }
 
 export async function analyzeCreator(handleIn: string, campaignId: string | null): Promise<any> {

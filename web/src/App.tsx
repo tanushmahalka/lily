@@ -26,6 +26,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/campaigns" element={<Campaigns />} />
         <Route path="/campaigns/:id" element={<CampaignPage />} />
+        <Route path="/campaigns/:id/:tab" element={<CampaignPage />} />
         <Route path="/creators" element={<Creators />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:threadId" element={<Chat />} />

@@ -5,7 +5,7 @@ import { logEvent } from "../lib/events";
 import { wakeLily } from "../lily";
 import { AnalysisError, analyzeCreator, cleanHandle, saveReel, upsertCreator } from "./analyze";
 import { readProduct } from "./product";
-import { normProfile, normReel, reelList, tregCall, type Reel } from "./treg";
+import { normReel, reelList, tregCall, type Reel } from "./treg";
 
 export { analyzeCreator };
 
@@ -43,7 +43,7 @@ app.post("/find/reels", async (c) => {
     data: { keyword, reels: reels.length, creators: creators.size },
   });
   const rows = reels.length
-    ? parseRows(db.query(`SELECT * FROM found_reels WHERE campaign_id = ? AND shortcode IN (${reels.map(() => "?").join(",")})`)
+    ? parseRows(db.query(`SELECT * FROM found_reels WHERE campaign_id = ? AND shortcode IN (${reels.map(() => "?").join(",")}) ORDER BY views DESC`)
       .all(campaign_id, ...reels.map((r) => r.shortcode)))
     : [];
   return c.json({ reels: rows, creators: [...creators.values()] });
@@ -87,17 +87,16 @@ app.post("/creators", async (c) => {
   const handle = cleanHandle(ig_handle);
   if (campaign_id && !db.query("SELECT 1 FROM campaigns WHERE id = ?").get(campaign_id)) return c.json({ error: "campaign not found" }, 404);
 
-  // Fill the basics if Instagram answers; a failure never blocks adding the creator.
-  const profile = await tregCall("treg.instagram.user.profile", { username: handle }).then(normProfile).catch(() => null);
-  let creator = upsertCreator(handle, {
-    ig_user_id: profile?.user_id, name: profile?.name, avatar_url: profile?.avatar_url, bio: profile?.bio,
-    followers: profile?.followers, email: email ?? profile?.public_email ?? null,
-  });
+  // No treg call here: the response stays instant. The background analysis fills avatar, followers and bio.
+  let creator = upsertCreator(handle, { email: email ?? null });
   if (email && creator.email !== email) {
     db.query("UPDATE creators SET email = ? WHERE id = ?").run(email, creator.id);
     creator = { ...creator, email };
   }
-  if (!campaign_id) return c.json({ creator, deal: null });
+  if (!campaign_id) {
+    analyzeCreator(handle, null).catch(() => {});
+    return c.json({ creator, deal: null });
+  }
 
   const existing = db.query("SELECT * FROM deals WHERE campaign_id = ? AND creator_id = ?").get(campaign_id, creator.id);
   if (existing) return c.json({ creator, deal: parseRow(existing) });

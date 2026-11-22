@@ -51,7 +51,7 @@ How to judge:
 - Length and format rules: allow a few seconds either way.
 
 feedback_to_creator: written to the creator by Lily. Warm, specific, at most 3 short sentences, no bullet points, no "As per the brief". Start with something you genuinely liked. If any rule failed, ask only for those fixes, concretely and kindly. If everything passed, thank them and say it's going to the team for a final look.
-notes_for_admin: one or two plain lines for the brand owner about this round.`;
+notes_for_admin: one or two plain lines for the brand owner about this round: what passed, what's missing. Don't claim anything was sent to the creator yet.`;
 }
 
 /** Review `path` against `rules`. The verdict is computed here, not trusted from the model. */

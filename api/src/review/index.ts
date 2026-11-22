@@ -76,9 +76,11 @@ export async function reviewVideo(dealId: string, input: { source_url?: string; 
     : failed === 0
       ? `Watched ${who}'s video: all ${review.checks.length} rules pass`
       : `Watched ${who}'s video: ${review.checks.length - failed} of ${review.checks.length} rules pass, asked for ${failed === 1 ? "one fix" : `${failed} fixes`}`;
-  if (["awaiting_video", "video_feedback", "video_ready"].includes(deal.stage)) {
+  // A video we couldn't open never pulls a deal back out of video_ready (its approval is still pending).
+  const watched = review.checks.length > 0;
+  if (["awaiting_video", "video_feedback"].includes(deal.stage) || (deal.stage === "video_ready" && watched)) {
     try {
-      setStage(dealId, "video_feedback", failed || review.checks.length === 0 ? `Round ${round}: needs a change` : `Round ${round} looks good`);
+      setStage(dealId, "video_feedback", failed || !watched ? `Round ${round}: needs a change` : `Round ${round} looks good`);
     } catch (e: any) {
       console.error(`[review] stage move failed for ${dealId}:`, e?.message ?? e);
     }
@@ -109,7 +111,18 @@ app.post("/submissions/:id/lily-approve", (c) => {
 
 app.get("/videos/:file", (c) => {
   const file = Bun.file(join(VIDEOS_DIR, basename(c.req.param("file"))));
-  return file.size ? new Response(file) : c.json({ error: "not found" }, 404);
+  const size = file.size;
+  if (!size) return c.json({ error: "not found" }, 404);
+  const headers: Record<string, string> = { "Content-Type": "video/mp4", "Accept-Ranges": "bytes" };
+  const m = c.req.header("range")?.match(/^bytes=(\d*)-(\d*)$/);
+  if (!m || (!m[1] && !m[2])) return new Response(file, { headers: { ...headers, "Content-Length": String(size) } });
+  const start = m[1] ? Number(m[1]) : Math.max(0, size - Number(m[2]));
+  const end = m[1] && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;
+  if (start > end || start >= size) return new Response(null, { status: 416, headers: { "Content-Range": `bytes */${size}` } });
+  return new Response(file.slice(start, end + 1), {
+    status: 206,
+    headers: { ...headers, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": String(end - start + 1) },
+  });
 });
 
 export default app;

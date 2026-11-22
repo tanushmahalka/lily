@@ -100,3 +100,9 @@ Creators with a deal in **another** campaign, or a `lily_note`. Returns `[{creat
 
 ## Questions
 None open for B. The two items above are waiting on the orchestrator.
+
+## Build notes (after approval)
+- `POST /creators` makes no treg call, so it answers instantly. The background `analyzeCreator` fills avatar, followers and bio; it also runs without a campaign (general analysis, ~$0.005).
+- treg reel providers may return no caption or date (crawl4ai for kush_2311); the post time is decoded from the Instagram media id.
+- A treg miss walks the provider waterfall for ~75 s and ~$0.003 (Max-Cost caps the whole waterfall at $0.01); `tregCall` kills at 60 s.
+- A failed analysis is stored as `fit:'excluded'` with the first reason "Analysis failed: …" (Amendments v4 #3), plus a `creator.analyzed` event.

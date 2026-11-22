@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import type {
   Account, Approval, Brand, CampaignDetail, CampaignListRow, ChatMessage, ChatThread,
-  CreatorListRow, DealContext, Perf,
+  CreatorListRow, DealContext, LilyEvent, Perf,
 } from "./types";
 
 export const qk = {
@@ -17,6 +17,7 @@ export const qk = {
   threadMessages: (id: string) => ["thread", id, "messages"] as const,
   settings: ["settings"] as const,
   accounts: ["accounts"] as const,
+  events: (campaignId: string) => ["events", campaignId] as const,
 };
 
 export const useCampaigns = () => useQuery({ queryKey: qk.campaigns, queryFn: () => api<CampaignListRow[]>("/campaigns") });
@@ -52,3 +53,5 @@ export const useSettings = () =>
     },
   });
 export const useAccounts = () => useQuery({ queryKey: qk.accounts, queryFn: () => api<Account[]>("/accounts") });
+export const useEvents = (campaignId?: string) =>
+  useQuery({ queryKey: qk.events(campaignId ?? ""), queryFn: () => api<LilyEvent[]>(`/events?campaign_id=${campaignId}`), enabled: !!campaignId });

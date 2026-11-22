@@ -1,6 +1,7 @@
 import { db, now } from "../lib/db";
 import { logEvent } from "../lib/events";
 import { json, Type } from "../lib/gemini";
+import { setCampaignProduct } from "../core";
 import { tregCall } from "./treg";
 
 export type Brand = { name: string; logo_url: string | null; about: string; tone: string; website: string };
@@ -68,7 +69,7 @@ ${text}`,
   const product: Product = { ...res.product, images: res.product.images ?? [] };
 
   if (campaignId) {
-    db.query("UPDATE campaigns SET product_json = ? WHERE id = ?").run(JSON.stringify(product), campaignId);
+    setCampaignProduct(campaignId, product); // stores product_json and renames the chat thread (v4 #5)
     logEvent({ campaign_id: campaignId, actor: "lily", type: "product.read", summary: `Read your product page: ${product.title}`, data: { url } });
   }
 

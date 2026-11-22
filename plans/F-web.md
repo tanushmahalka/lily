@@ -1,7 +1,7 @@
 # Thread F: Admin UI (`web/`)
 
 Owns `web/` only. Own package. Vite + React + TypeScript, dev server `127.0.0.1:5180`, `/api` proxied to `127.0.0.1:4400`.
-Status: **plan, waiting for "approved". No code written yet.**
+Status: **approved and built.** Onboarding starts empty with a "Fill with example" button (Product Folks values).
 
 ## Libraries (library first)
 | Need | Library |
@@ -103,3 +103,8 @@ Until core GETs exist (currently every `/api/*` route answers 404), I build agai
 ## Questions
 1. Onboarding prefill: should the form start empty (default) or prefilled with the demo values ($1,500, theproductfolks link, the ID-card goal) to save typing on stage? My pick: empty fields, plus the 3 goal suggestion chips from PLAN §1.1.
 2. Status: at plan time every core GET (`/campaigns`, `/approvals`, `/creators`, `/chat/threads`, `/settings`, `/accounts`) still returns 404 on :4400. I'll build against CONTRACT shapes and the seeded DB; tell me when A's reads are up.
+
+## Round 2 (Tanush's feedback, building)
+1. **Autonomy at creation:** onboarding gets the Human-first / Autopilot / Full autopilot picker (default = Settings → Lily). `POST /campaigns` doesn't take autonomy, so the UI follows it with `PATCH /campaigns/:id {autonomy}` when it differs from the default. The campaign page keeps a small control.
+2. **Photo-card first, edge to edge, seamless** across the app: creators shown as full-bleed photo cards (campaign board, Creators page), fewer boxed cards, hairline dividers.
+3. **Campaign sub-sidebar** (`/campaigns/:id` and `/campaigns/:id/creators`): **Newsfeed** (Needs you, Payments, brief, then Lily's status updates from `GET /events?campaign_id`, live over SSE, newest first) and **Creators** with a view switch **Kanban (default) · Cards · List**. Kanban columns: Shortlisted · Reaching out · Negotiating · Needs your OK · Making the video · Done (+ Didn't work out). Approve inline on cards; Approve shortlist on the Shortlisted column. Clicking a creator opens a **large side sheet** (two columns: profile, why picked, reels, offers, videos, after posting | conversation + Tell Lily).

@@ -1,8 +1,10 @@
-// treg CLI wrapper + provider-shape normalisers. Every call is capped at $0.01.
+// treg CLI wrapper + provider-shape normalisers.
+// Max-Cost caps the whole provider waterfall of one call at $0.01. A miss can walk the
+// waterfall for over a minute (seen: 78 s for a handle that doesn't exist), so calls time out at 60 s.
 export async function tregCall(id: string, body: Record<string, unknown>): Promise<any> {
   const proc = Bun.spawn(
     ["treg", "call", id, "--data", JSON.stringify(body), "--header", "X-Treg-Route-Max-Cost: 0.01"],
-    { stdout: "pipe", stderr: "pipe" },
+    { stdout: "pipe", stderr: "pipe", timeout: 60_000 },
   );
   const [out, err, code] = await Promise.all([
     new Response(proc.stdout).text(), new Response(proc.stderr).text(), proc.exited,

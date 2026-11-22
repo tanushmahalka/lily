@@ -160,3 +160,13 @@ Each event carries a one-line human `summary`. The UI shows it verbatim, so writ
 5. ig-bridge will be restarted by its owner with `WEBHOOK_URL=http://127.0.0.1:4400/api/inbound/instagram` and `WEBHOOK_SECRET=$IG_WEBHOOK_SECRET`.
 6. **Demo product link:** https://www.theproductfolks.com/product-unconference-2026, the event where the hackathon runs. "Product" here is an event, so brand = The Product Folks and product = Product Unconference 2026 (a ticket/registration). B and Lily must handle a non-ecommerce page.
 7. **Demo video rule:** "The Product Unconference ID card must be clearly visible in the video." The admin states it in the campaign goal at onboarding. Lily copies any hard requirement in the goal **verbatim** into the `video_rules` of all 3 ideas. D treats it as a must-pass rule. In the demo, Ansh's first video leaves the card out, so Lily kindly asks for a revision; round 2 shows it.
+
+## Amendments v4 (orchestrator)
+1. **Editable video checklist.** `brief.video_rules` (on the campaign) is the one source of truth once an idea is chosen. A adds `PUT /campaigns/:id/brief {video_rules: string[]}`, which logs `brief.updated`. F shows the brief's rules as a checklist with add and remove. D reads `campaign.brief.video_rules` at review time and never the idea's copy. B already reads the brief first.
+2. **Demo checklist** (Lily's ideas skill puts these into every idea's `video_rules` when the goal names them, word for word): "The Product Unconference ID card is clearly visible", "Mentions the event dates", "Speaks positively about the event", "Encourages people to come".
+3. **Failed analysis:** there's no new fit value. Store `fit:'excluded'` with the first reason starting "Analysis failed: …".
+4. **Freeze rule for the demo:** once the orchestrator says "freeze", nobody edits files under `api/`, because every edit restarts the API and drops in-flight Lily calls.
+5. **Product → thread title:** A exports `setCampaignProduct(campaignId, product_json)`. It stores the product and renames the campaign's chat thread to the product title, and `PUT /campaigns/:id/product` uses it too. B's `/product/read` calls it when `campaign_id` is passed, so the rename happens no matter who reads the page.
+6. `POST /campaigns` also accepts an optional `autonomy`, so F can set it in one call instead of patching afterwards.
+7. `POST /deals/:id/submissions` takes 20–30 s. Lily's tool calls to it must allow at least 90 s.
+8. **Thread rename is pushed live:** `setCampaignProduct` logs a `thread.renamed` event `{thread_id, title}`, and F refetches `/chat/threads` when it sees one.

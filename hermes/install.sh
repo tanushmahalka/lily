@@ -46,6 +46,23 @@ for d in "$HERE"/skills/creat0r-*; do
   ln -sfn "$d" "$PDIR/skills/$(basename "$d")"
 done
 
+# 5b. One bundled skill per webhook route (Hermes injects only the first skill a route lists)
+bundle() { # bundle <route> <skill>...
+  local route="$1"; shift
+  local out="$PDIR/skills/creat0r-wake-$route"
+  rm -rf "$out"; mkdir -p "$out"
+  {
+    printf -- '---\nname: creat0r-wake-%s\ndescription: Everything Lily needs for a creat0r %s webhook run (built by hermes/install.sh from %s).\nversion: 1.0.0\n---\n\n' "$route" "$route" "$*"
+    for s in "$@"; do
+      printf '\n# Skill: %s\n\n' "$s"
+      awk 'NR==1 && /^---$/ {f=1; next} f && /^---$/ {f=0; next} !f' "$HERE/skills/$s/SKILL.md"
+    done
+  } > "$out/SKILL.md"
+}
+bundle campaign-start  creat0r-context creat0r-find creat0r-outreach
+bundle creator-message creat0r-context creat0r-negotiate creat0r-review
+bundle admin-decision  creat0r-context creat0r-admin creat0r-outreach creat0r-negotiate creat0r-review
+
 # 6. (Re)start the gateway in the background
 if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
   kill "$(cat "$PIDFILE")" || true

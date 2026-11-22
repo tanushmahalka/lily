@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChatHistory, ChatInput, Conversation, EmptyState, Message, Text, ThinkingSteps } from "../kit/halaska-kit";
+import { ChatHistory, EmptyState, Text, ThinkingSteps, ThinkingIndicator } from "../kit/halaska-kit";
+import ChatBubble from "../components/ChatBubble";
+import Composer from "../components/Composer";
 import ApprovalCard from "../components/ApprovalCard";
 import IdeasCard from "../components/IdeasCard";
 import Markdown from "../components/Markdown";
@@ -84,10 +86,18 @@ export default function Chat() {
   }, [threadId]);
 
   const list = (messages ?? []).filter((m) => !(live && m.role === "admin" && m.body === live.admin && m.created_at >= live.sentAt - 5000));
-  const h = vh - 32;
+  const h = vh - 24;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // follow new content while the reader is near the bottom
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 240) el.scrollTop = el.scrollHeight;
+  }, [list.length, live?.text, live?.steps.length]);
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [threadId, messages === undefined]);
 
   return (
-    <div style={{ display: "flex", gap: 16, padding: 16, height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh" }}>
+      <div style={{ borderRight: "1px solid #efefed", padding: 12, background: "#fcfcfb" }}>
       <ChatHistory
         threads={(threads ?? []).map((t: ChatThread) => ({
           id: t.id, title: t.title, preview: t.preview, time: new Date(t.last_at ?? t.updated_at ?? t.created_at),
@@ -95,44 +105,46 @@ export default function Chat() {
         activeId={threadId}
         onSelect={(id: string) => nav(`/chat/${id}`)}
         title="Chats"
-        width={260}
+        width={256}
         height={h}
       />
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      </div>
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
         {threadId ? (
           <>
-            <Text weight="semibold" as="div" style={{ padding: "4px 4px 0" }}>{thread?.title ?? "Lily"}</Text>
-            <Conversation height={h - 150} frame typing={!!live && !live.text && !live.steps.length} typingLabel="Lily is thinking"
-              emptyState={<EmptyState title="Say hi to Lily" description="Ask how a campaign is going, or tell her what to do." />}>
-              {list.length || live ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                  {list.map((m) => <Turn key={m.id} m={m} campaignId={thread?.campaign_id ?? undefined} />)}
-                  {live && (
-                    <>
-                      <Message role="user" name="You" text={live.admin} status="sending" />
-                      {(live.steps.length > 0 || live.text) && (
-                        <Message role="agent" name="Lily" streaming={!!live.text}>
-                          {live.steps.length > 0 && (
-                            <div style={{ marginBottom: live.text ? 10 : 0 }}>
-                              <ThinkingSteps steps={live.steps} current={live.text ? live.steps.length : live.steps.length - 1} />
-                            </div>
-                          )}
-                          {live.text && <Markdown text={live.text} />}
-                        </Message>
-                      )}
-                    </>
-                  )}
-                </div>
-              ) : null}
-            </Conversation>
-            <ChatInput
-              placeholder="Message Lily…"
-              suggestions={[]}
-              models={[]}
-              onSubmit={send}
-              streaming={!!live}
-              onStop={() => abortRef.current?.abort()}
-            />
+            <div style={{ padding: "18px 32px 12px", borderBottom: "1px solid #efefed" }}>
+              <Text size="lg" weight="semibold" as="div">{thread?.title ?? "Lily"}</Text>
+              {thread?.campaign_id && (
+                <button type="button" onClick={() => nav(`/campaigns/${thread.campaign_id}`)}
+                  style={{ all: "unset", cursor: "pointer", fontSize: 13, color: "#737373" }}>Open campaign →</button>
+              )}
+            </div>
+            <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <div style={{ maxWidth: 780, margin: "0 auto", padding: "24px 32px", display: "flex", flexDirection: "column", gap: 18 }}>
+                {!list.length && !live && <EmptyState title="Say hi to Lily" description="Ask how a campaign is going, or tell her what to do." />}
+                {list.map((m) => <Turn key={m.id} m={m} campaignId={thread?.campaign_id ?? undefined} />)}
+                {live && (
+                  <>
+                    <ChatBubble role="user" pending>{live.admin}</ChatBubble>
+                    {live.steps.length > 0 || live.text ? (
+                      <ChatBubble role="agent" streaming={!!live.text}>
+                        {live.steps.length > 0 && (
+                          <div style={{ marginBottom: live.text ? 10 : 0 }}>
+                            <ThinkingSteps steps={live.steps} current={live.text ? live.steps.length : live.steps.length - 1} />
+                          </div>
+                        )}
+                        {live.text && <Markdown text={live.text} />}
+                      </ChatBubble>
+                    ) : (
+                      <ThinkingIndicator label="Lily is thinking" />
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+            <div style={{ maxWidth: 780, width: "100%", margin: "0 auto", padding: "8px 32px 24px", boxSizing: "border-box" }}>
+              <Composer placeholder="Message Lily…" onSend={send} streaming={!!live} onStop={() => abortRef.current?.abort()} />
+            </div>
           </>
         ) : (
           <EmptyState title="No chats yet" description="Start a campaign and Lily will open one." />
@@ -147,7 +159,7 @@ function Turn({ m, campaignId }: { m: ChatMessage; campaignId?: string }) {
   const { data: approvals } = useApprovals();
   const ref = field<any>(m, "ref", null);
 
-  if (m.role === "admin") return <Message role="user" name="You" text={m.body} time={time(m.created_at)} />;
+  if (m.role === "admin") return <ChatBubble role="user" time={time(m.created_at)}>{m.body}</ChatBubble>;
 
   if (m.kind === "update") {
     return (
@@ -159,16 +171,16 @@ function Turn({ m, campaignId }: { m: ChatMessage; campaignId?: string }) {
 
   if (m.kind === "steps") {
     const steps: string[] = Array.isArray(ref?.steps) ? ref.steps : m.body.split("\n").filter(Boolean);
-    return <Message role="agent" name="Lily" time={time(m.created_at)}><ThinkingSteps steps={steps} current={steps.length} /></Message>;
+    return <ChatBubble role="agent" time={time(m.created_at)}><ThinkingSteps steps={steps} current={steps.length} /></ChatBubble>;
   }
 
   if (m.kind === "ideas") {
     const cid = ref?.campaign_id ?? campaignId;
     return (
-      <Message role="agent" name="Lily" time={time(m.created_at)}>
+      <ChatBubble role="agent" time={time(m.created_at)}>
         {m.body && <div style={{ marginBottom: 10 }}><Markdown text={m.body} /></div>}
         {cid && <IdeasCard campaignId={cid} />}
-      </Message>
+      </ChatBubble>
     );
   }
 
@@ -176,20 +188,20 @@ function Turn({ m, campaignId }: { m: ChatMessage; campaignId?: string }) {
     const aid = ref?.approval_id ?? ref?.id;
     const a = approvals?.find((x) => x.id === aid);
     return (
-      <Message role="agent" name="Lily" time={time(m.created_at)}>
+      <ChatBubble role="agent" time={time(m.created_at)}>
         {m.body && <div style={{ marginBottom: 10 }}><Markdown text={m.body} /></div>}
         {a ? (
           <ApprovalCard approval={a} showCampaign onOpenDeal={(dealId) => nav(`/campaigns/${a.campaign_id}?deal=${dealId}`)} />
         ) : aid ? (
           <Text size="sm" muted>Done. Nothing waiting here.</Text>
         ) : null}
-      </Message>
+      </ChatBubble>
     );
   }
 
   return (
-    <Message role="agent" name="Lily" time={time(m.created_at)}>
+    <ChatBubble role="agent" time={time(m.created_at)}>
       <Markdown text={m.body} />
-    </Message>
+    </ChatBubble>
   );
 }

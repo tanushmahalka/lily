@@ -6,6 +6,7 @@ import routes from "./routes";
 export { setStage, type Stage } from "./stage";
 export { postChat } from "./chat";
 export { createApproval } from "./approvals";
+export { setCampaignProduct } from "./routes";
 
 const app = new Hono();
 app.route("/", chat);

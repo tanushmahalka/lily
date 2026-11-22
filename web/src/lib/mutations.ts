@@ -183,12 +183,34 @@ export function useCreateCampaign() {
   const qc = useQueryClient();
   const toast = useToast();
   return useMutation({
-    mutationFn: (v: { budget_usd: number; product_url: string; goal: string }) =>
+    mutationFn: (v: { budget_usd: number; product_url: string; goal: string; autonomy?: Autonomy }) =>
       post<{ campaign: Campaign; thread_id: string }>(`/campaigns`, v),
     onError: (e) => toast(errText(e), "danger"),
     onSettled: () => Promise.all([
       qc.invalidateQueries({ queryKey: qk.campaigns }),
       qc.invalidateQueries({ queryKey: qk.threads }),
     ]),
+  });
+}
+
+/** The brief's video checklist (CONTRACT v4 #1). Optimistic: the list updates as you type. */
+export function useSaveVideoRules(campaignId: string) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (video_rules: string[]) => put(`/campaigns/${campaignId}/brief`, { video_rules }),
+    scope: { id: `brief-${campaignId}` },
+    onMutate: async (video_rules) => {
+      const snap = await snapshot(qc, [qk.campaign(campaignId)]);
+      qc.setQueryData<CampaignDetail>(qk.campaign(campaignId), (d) => {
+        if (!d) return d;
+        const c: any = d.campaign;
+        const brief = { ...(typeof c.brief === "object" && c.brief ? c.brief : {}), video_rules };
+        return { ...d, campaign: { ...c, brief } };
+      });
+      return { snap };
+    },
+    onError: (e, _v, ctx) => { restore(qc, ctx?.snap); toast(errText(e), "danger"); },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.campaign(campaignId) }),
   });
 }

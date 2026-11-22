@@ -58,7 +58,9 @@ app.post("/campaigns", async (c) => {
   if (!isNum(b.budget_usd) || b.budget_usd <= 0) throw fail(400, { error: "budget_usd must be a positive number" });
   if (!isStr(b.product_url)) throw fail(400, { error: "product_url is required" });
   if (!isStr(b.goal)) throw fail(400, { error: "goal is required" });
-  let autonomy = getSetting<string>("default_autonomy") ?? "human_first";
+  if (b.autonomy === "full_autopilot") throw fail(400, { error: "coming_soon" });
+  if (b.autonomy != null && !AUTONOMY.includes(b.autonomy)) throw fail(400, { error: "autonomy must be human_first or autopilot" });
+  let autonomy: string = b.autonomy ?? getSetting<string>("default_autonomy") ?? "human_first";
   if (!AUTONOMY.includes(autonomy) || autonomy === "full_autopilot") autonomy = "human_first";
   const cid = id("cmp");
   const tid = id("thr");
@@ -98,13 +100,34 @@ app.patch("/campaigns/:id", async (c) => {
   return c.json(withTitle(row("campaigns", campaign.id)));
 });
 
-app.put("/campaigns/:id/product", async (c) => {
-  const campaign = mustRow("campaigns", c.req.param("id"), "campaign");
-  const { product_json } = await body(c);
+/** Amendments v4 #5: stores the product and renames the campaign's chat thread to its title (goal if none). B calls it too. */
+export function setCampaignProduct(campaignId: string, product_json: Record<string, any>) {
+  const campaign = mustRow("campaigns", campaignId, "campaign");
   if (!product_json || typeof product_json !== "object" || Array.isArray(product_json)) throw fail(400, { error: "product_json must be an object" });
   db.query("UPDATE campaigns SET product_json = ? WHERE id = ?").run(JSON.stringify(product_json), campaign.id);
   const title = isStr(product_json.title) ? product_json.title.trim() : campaign.goal;
-  if (campaign.chat_thread_id) db.query("UPDATE chat_threads SET title = ? WHERE id = ?").run(title, campaign.chat_thread_id);
+  if (campaign.chat_thread_id) {
+    db.query("UPDATE chat_threads SET title = ? WHERE id = ?").run(title, campaign.chat_thread_id);
+    logEvent({ campaign_id: campaign.id, actor: "lily", type: "thread.renamed", summary: `Named the chat "${title}"`, data: { thread_id: campaign.chat_thread_id, title } });
+  }
+  return withTitle(row("campaigns", campaign.id));
+}
+
+app.put("/campaigns/:id/product", async (c) => {
+  const { product_json } = await body(c);
+  return c.json(setCampaignProduct(c.req.param("id"), product_json));
+});
+
+// Amendments v4 #1: brief.video_rules is the one editable checklist once an idea is chosen.
+app.put("/campaigns/:id/brief", async (c) => {
+  const campaign = mustRow("campaigns", c.req.param("id"), "campaign");
+  const { video_rules } = await body(c);
+  if (!Array.isArray(video_rules) || video_rules.length > 10 || !video_rules.every(isStr))
+    throw fail(400, { error: "video_rules must be an array of up to 10 non-empty strings" });
+  if (!campaign.brief) throw fail(409, { error: "campaign has no brief yet (choose an idea first)" });
+  const rules = video_rules.map((r: string) => r.trim());
+  db.query("UPDATE campaigns SET brief_json = ? WHERE id = ?").run(JSON.stringify({ ...campaign.brief, video_rules: rules }), campaign.id);
+  logEvent({ campaign_id: campaign.id, actor: "admin", type: "brief.updated", summary: `Updated the video checklist (${rules.length} rule${rules.length === 1 ? "" : "s"})`, data: { video_rules: rules } });
   return c.json(withTitle(row("campaigns", campaign.id)));
 });
 
